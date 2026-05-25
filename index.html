@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Controle Sorteio</title>
+  <style>
+    :root{--bg:#fff7f7;--card:#fff;--ink:#29151a;--muted:#74666a;--red:#530071;--red2:#9100c5;--line:#ead1d6;--free:#fff;--reserved:#ffe08a;--paid:#82e7a7;--shadow:0 10px 30px rgba(120,0,30,.10)}
+    *{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--ink)}
+    header{background:linear-gradient(135deg,var(--red),var(--red2));color:#fff;padding:18px 20px;box-shadow:var(--shadow)}
+    header h1{margin:0;font-size:22px}header p{margin:6px 0 0;opacity:.92;font-size:14px}
+    main{max-width:1180px;margin:0 auto;}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;box-shadow:var(--shadow)}
+    .grid2{display:grid;grid-template-columns:360px 1fr;gap:16px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+    label{display:block;font-weight:700;font-size:18px;margin:8px 0 4px}input,select,textarea,button{font:inherit}
+    input,select,textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px;background:#fff;color:var(--ink)}textarea{min-height:74px;resize:vertical}
+    button{border:0;border-radius:10px;padding:10px 12px;font-weight:700;cursor:pointer}.primary{background:var(--red);color:#fff}.secondary{background:#e4d6e9;color:var(--red2)}.danger{background:#e4d6e9;color:#530071}.ok{background:#dcfce7;color:#166534}
+    .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.small{font-size:12px;color:var(--muted)}
+    .raffle-list{display:grid;gap:8px}.raffle-item{display:flex;justify-content:space-between;align-items:center;border:1px solid var(--line);border-radius:12px;padding:10px;background:#fff}
+    .raffle-item.active{border-color:var(--red);box-shadow:0 0 0 2px rgba(180,7,44,.12)}
+    .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.stat{background:#fff8fa;border:1px solid var(--line);border-radius:12px;padding:10px;text-align:center}.stat b{display:block;font-size:20px;color:var(--red)}
+    .numbers{display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:6px;margin-top:12px}.num{border:1px solid #d8b7bf;border-radius:8px;padding:10px 4px;text-align:center;font-weight:800;min-height:42px;background:var(--free);position:relative}.num.reserved{background:var(--reserved)}.num.paid{background:var(--paid)}.num.selected{outline:3px solid var(--red)}.num span{font-size:18px}.num small{display:none;position:absolute;left:50%;bottom:100%;transform:translateX(-50%);background:#2b1520;color:#fff;border-radius:8px;padding:6px;white-space:nowrap;z-index:3;font-weight:400}.num:hover small{display:block}
+    table{width:100%;border-collapse:collapse;margin-top:10px;font-size:14px}th,td{border-bottom:1px solid var(--line);padding:9px;text-align:left;vertical-align:top}th{color:var(--red2)}
+    .pill{display:inline-block;padding:4px 8px;border-radius:999px;font-size:12px;font-weight:700}.pill.paid{background:#dcfce7;color:#166534}.pill.reserved{background:#fef3c7;color:#92400e}
+    .hide{display:none!important}.sync{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.notice{background:#fff8e1;border:1px solid #f6d365;border-radius:12px;padding:10px;color:#6b4e00;font-size:13px}
+    @media(max-width:850px){.grid2{grid-template-columns:1fr}.grid3,.sync,.stats{grid-template-columns:1fr 1fr}.numbers{grid-template-columns:repeat(auto-fill,minmax(46px,1fr))}}
+    @media print{header,.no-print,.grid2>.card:first-child,#salesTable button{display:none!important}main{max-width:none}.grid2{display:block}.card{box-shadow:none;border:0}.numbers{grid-template-columns:repeat(10,1fr)}}
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+<body>
+<header>
+  <h1>Controle Sorteio</h1>
+  <p>Cartela, caderno digital e salvamento em JSON para uso no GitHub Pages.</p>
+</header>
+<main>
+  <section class="card no-print">
+    <h2>Sincronização GitHub</h2>
+    <div class="notice"><b>Atenção:</b> não coloque o token dentro do arquivo HTML nem faça commit dele. Cole o token apenas no navegador de quem administra. Use um token fine-grained limitado a este repositório com permissão <b>Contents: Read and Write</b>.</div>
+    <div class="sync">
+      <div><label>Dono do repositório</label><input id="ghOwner" placeholder="ex: darumadecor"></div>
+      <div><label>Repositório</label><input id="ghRepo" placeholder="ex: sorteio"></div>
+      <div><label>Branch</label><input id="ghBranch" value="main"></div>
+      <div><label>Caminho JSON</label><input id="ghPath" value="data/rifas.json"></div>
+    </div>
+    <label>Token GitHub</label><input id="ghToken" type="password" placeholder="Cole o token somente no navegador" autocomplete="off">
+    <div class="actions">
+      <button class="secondary" onclick="saveGhConfig()">Salvar configuração neste navegador</button>
+      <button class="secondary" onclick="loadFromGithub()">Carregar JSON do GitHub</button>
+      <button class="primary" onclick="saveToGithub()">Salvar JSON no GitHub</button>
+      <button class="secondary" onclick="exportJson()">Baixar backup JSON</button>
+      <label class="secondary" style="display:inline-flex;align-items:center;gap:8px;padding:10px 12px;border-radius:10px;cursor:pointer">Importar JSON<input type="file" accept="application/json" onchange="importJson(event)" style="display:none"></label>
+    </div>
+    <p id="syncMsg" class="small"></p>
+  </section>
+
+  <section class="grid2">
+    <div class="card no-print">
+      <h2>Sorteio</h2>
+      <div id="raffleList" class="raffle-list"></div>
+      <hr style="border:0;border-top:1px solid var(--line);margin:14px 0">
+      <h3>Criar Novo Sorteio</h3>
+      <label>Nome do Sorteio</label><input id="newTitle" placeholder="Ex: Sorteio Dia dos Namorados">
+      <div class="grid3">
+        <div><label>Qtd. números</label><input id="newQty" type="number" value="201" min="1"></div>
+        <div><label>Primeiro número</label><input id="newStart" type="number" value="1"></div>
+        <div><label>Dígitos</label><input id="newDigits" type="number" value="3" min="1"></div>
+      </div>
+      <label>Valor / regra</label><input id="newPrice" placeholder="Ex: 3 números por R$ 10,00">
+      <label>Prêmios</label><textarea id="newPrizes" placeholder="1º prêmio: ...&#10;2º prêmio: ..."></textarea>
+      <div class="actions"><button class="primary" onclick="createRaffle()">Criar rifa</button></div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap">
+        <div><h2 id="raffleTitle">Nenhum sorteio selecionado</h2><p id="raffleInfo" class="small"></p></div>
+        <div class="actions no-print"><button class="secondary" onclick="window.print()">Imprimir / salvar PDF</button><button class="secondary" onclick="exportAsJpg()">Salvar como JPG</button><button class="danger" onclick="deleteCurrentRaffle()">Excluir Sorteio</button></div>
+      </div>
+      <div id="stats" class="stats"></div>
+      <div id="numbers" class="numbers"></div>
+    </div>
+  </section>
+
+  <section class="card no-print" id="saleCard">
+    <h2>Lançar venda / reserva</h2>
+    <div class="grid3">
+      <div><label>Nome do comprador</label><input id="buyerName" placeholder="Nome"></div>
+      <div><label>WhatsApp</label><input id="buyerPhone" placeholder="Opcional"></div>
+      <div><label>Vendedora</label><input id="sellerName" placeholder="Quem vendeu"></div>
+    </div>
+    <label>Números escolhidos</label><input id="chosenNumbers" placeholder="Ex: 021, 042, 080">
+    <div class="grid3">
+      <div><label>Status</label><select id="saleStatus"><option value="reserved">Reservado</option><option value="paid">Pago</option></select></div>
+      <div><label>Data</label><input id="saleDate" type="date"></div>
+      <div><label>&nbsp;</label><button class="primary" onclick="saveSale()" style="width:100%">Salvar venda</button></div>
+    </div>
+    <label>Observações</label><textarea id="saleNotes" placeholder="Opcional"></textarea>
+    <p id="saleMsg" class="small"></p>
+  </section>
+
+  <section class="card">
+    <h2>Caderno digital</h2>
+    <div class="actions no-print"><input id="search" placeholder="Buscar por nome, número, telefone ou vendedora" oninput="render()"></div>
+    <div style="overflow:auto"><table id="salesTable"></table></div>
+  </section>
+</main>
+<script>
+const STORAGE_KEY='rifa_html_mvp_v1';
+let state={rifas:[],currentId:null};
+let ghSha=null;
+const $=id=>document.getElementById(id);
+function uid(){return 'r'+Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
+function pad(n,d){return String(n).padStart(d,'0')}
+function today(){return new Date().toISOString().slice(0,10)}
+function loadLocal(){try{state=JSON.parse(localStorage.getItem(STORAGE_KEY))||state}catch(e){}; const cfg=JSON.parse(localStorage.getItem('rifa_gh_cfg')||'{}'); ['ghOwner','ghRepo','ghBranch','ghPath'].forEach(id=>{if(cfg[id])$(id).value=cfg[id]}); $('saleDate').value=today(); render()}
+function saveLocal(){localStorage.setItem(STORAGE_KEY,JSON.stringify(state))}
+function current(){return state.rifas.find(r=>r.id===state.currentId)||state.rifas[0]||null}
+function createRaffle(){const title=$('newTitle').value.trim(); if(!title)return alert('Informe o nome da rifa.'); const qty=+$('newQty').value||100,start=+$('newStart').value||1,digits=+$('newDigits').value||3; const nums=Array.from({length:qty},(_,i)=>pad(start+i,digits)); const r={id:uid(),title,qty,start,digits,price:$('newPrice').value.trim(),prizes:$('newPrizes').value.trim(),numbers:nums,sales:[],createdAt:new Date().toISOString()}; state.rifas.push(r); state.currentId=r.id; saveLocal(); ['newTitle','newPrice','newPrizes'].forEach(id=>$(id).value=''); render(); saveToGithub().catch(()=>{})}
+function selectRaffle(id){state.currentId=id; saveLocal(); render()}
+function deleteCurrentRaffle(){const r=current(); if(!r)return; if(confirm('Excluir a rifa "'+r.title+'"?')){state.rifas=state.rifas.filter(x=>x.id!==r.id); state.currentId=state.rifas[0]?.id||null; saveLocal(); render(); saveToGithub().catch(()=>{})}}
+function ownerOf(num){const r=current(); if(!r)return null; for(const s of r.sales){if(s.numbers.includes(num))return s} return null}
+function parseNums(txt){const r=current(); if(!r)return []; const raw=txt.split(/[ ,;\n\t]+/).map(x=>x.trim()).filter(Boolean); return [...new Set(raw.map(x=>pad(parseInt(x,10),r.digits)).filter(x=>r.numbers.includes(x)))]}
+function toggleNum(num){const s=ownerOf(num); if(s){alert(num+' já está '+(s.status==='paid'?'pago':'reservado')+' para '+s.buyer);return} const input=$('chosenNumbers'); const nums=parseNums(input.value); if(nums.includes(num)) input.value=nums.filter(n=>n!==num).join(', '); else input.value=[...nums,num].join(', '); renderNumbersOnly()}
+function saveSale(){const r=current(); if(!r)return alert('Crie ou selecione uma rifa.'); const buyer=$('buyerName').value.trim(); const numbers=parseNums($('chosenNumbers').value); if(!buyer)return msg('saleMsg','Informe o nome do comprador.'); if(!numbers.length)return msg('saleMsg','Informe pelo menos um número válido.'); const conflicts=numbers.map(n=>[n,ownerOf(n)]).filter(x=>x[1]); if(conflicts.length)return msg('saleMsg','Número já ocupado: '+conflicts.map(x=>x[0]+' ('+x[1].buyer+')').join(', ')); r.sales.push({id:uid(),buyer,phone:$('buyerPhone').value.trim(),seller:$('sellerName').value.trim(),numbers,status:$('saleStatus').value,date:$('saleDate').value||today(),notes:$('saleNotes').value.trim(),createdAt:new Date().toISOString()}); ['buyerName','buyerPhone','chosenNumbers','saleNotes'].forEach(id=>$(id).value=''); $('saleDate').value=today(); saveLocal(); render(); msg('saleMsg','Venda salva com sucesso.'); saveToGithub().catch(()=>{})}
+function setPaid(id){const r=current(); const s=r.sales.find(x=>x.id===id); if(s){s.status='paid'; saveLocal(); render(); saveToGithub().catch(()=>{})}}
+function removeSale(id){const r=current(); const s=r.sales.find(x=>x.id===id); if(s&&confirm('Remover venda/reserva de '+s.buyer+' e liberar números?')){r.sales=r.sales.filter(x=>x.id!==id); saveLocal(); render(); saveToGithub().catch(()=>{})}}
+function msg(id,text){$(id).textContent=text; setTimeout(()=>{$(id).textContent=''},5000)}
+function render(){renderRaffles(); renderMain(); renderNumbersOnly(); renderSales()}
+function renderRaffles(){const box=$('raffleList'); if(!state.rifas.length){box.innerHTML='<p class="small">Nenhuma rifa criada ainda.</p>';return} box.innerHTML=state.rifas.map(r=>`<div class="raffle-item ${r.id===state.currentId?'active':''}"><div><b>${esc(r.title)}</b><br><span class="small">${r.numbers.length} números</span></div><button class="secondary" onclick="selectRaffle('${r.id}')">Abrir</button></div>`).join('')}
+function renderMain(){const r=current(); if(!r){$('raffleTitle').textContent='Nenhuma rifa selecionada'; $('raffleInfo').textContent=''; $('stats').innerHTML=''; $('numbers').innerHTML='';return} if(!state.currentId)state.currentId=r.id; $('raffleTitle').textContent=r.title; $('raffleInfo').textContent=[r.price,r.prizes].filter(Boolean).join(' | '); const sold=r.sales.flatMap(s=>s.numbers); const paid=r.sales.filter(s=>s.status==='paid').flatMap(s=>s.numbers); const reserved=r.sales.filter(s=>s.status==='reserved').flatMap(s=>s.numbers); $('stats').innerHTML=`<div class="stat"><b>${r.numbers.length}</b>Total</div><div class="stat"><b>${r.numbers.length-sold.length}</b>Livres</div><div class="stat"><b>${reserved.length}</b>Reservados</div><div class="stat"><b>${paid.length}</b>Pagos</div>`}
+function renderNumbersOnly(){const r=current(); if(!r)return; const selected=parseNums($('chosenNumbers')?.value||''); $('numbers').innerHTML=r.numbers.map(n=>{const s=ownerOf(n); const cls=s?s.status:''; const sel=selected.includes(n)?'selected':''; const tip=s?`<small>${esc(s.buyer)}<br>${s.status==='paid'?'Pago':'Reservado'}</small>`:''; return `<button class="num ${cls} ${sel}" onclick="toggleNum('${n}')"><span>${n}</span>${tip}</button>`}).join('')}
+function renderSales(){const r=current(); const table=$('salesTable'); if(!r){table.innerHTML='';return} const q=($('search').value||'').toLowerCase(); const rows=r.sales.filter(s=>[s.buyer,s.phone,s.seller,s.numbers.join(' ')].join(' ').toLowerCase().includes(q)).sort((a,b)=>a.numbers[0].localeCompare(b.numbers[0])); table.innerHTML='<thead><tr><th>Números</th><th>Comprador</th><th>WhatsApp</th><th>Vendedora</th><th>Status</th><th>Data</th><th class="no-print">Ações</th></tr></thead><tbody>'+rows.map(s=>`<tr><td><b>${s.numbers.join(', ')}</b></td><td>${esc(s.buyer)}${s.notes?'<br><span class="small">'+esc(s.notes)+'</span>':''}</td><td>${esc(s.phone||'-')}</td><td>${esc(s.seller||'-')}</td><td><span class="pill ${s.status}">${s.status==='paid'?'Pago':'Reservado'}</span></td><td>${esc(s.date||'')}</td><td class="no-print"><button class="ok" onclick="setPaid('${s.id}')">Pago</button> <button class="danger" onclick="removeSale('${s.id}')">Remover</button></td></tr>`).join('')+'</tbody>'}
+function esc(s){return String(s||'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]))}
+async function exportAsJpg(){const r=current(); if(!r)return; try{const container=document.createElement('div'); container.style.cssText='position:fixed;top:-9999px;left:0;width:900px;background:#fff;padding:20px;font-family:Arial,sans-serif'; const title=document.createElement('h2'); title.textContent=r.title; title.style.cssText='margin:0 0 8px 0;font-size:20px;color:var(--red)'; const info=document.createElement('p'); info.textContent=[r.price,r.prizes].filter(Boolean).join(' | '); info.style.cssText='margin:0 0 16px 0;font-size:12px;color:#74666a'; const statsDiv=document.createElement('div'); statsDiv.style.cssText='display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px'; const sold=r.sales.flatMap(s=>s.numbers),paid=r.sales.filter(s=>s.status==='paid').flatMap(s=>s.numbers),reserved=r.sales.filter(s=>s.status==='reserved').flatMap(s=>s.numbers); [r.numbers.length,r.numbers.length-sold.length,reserved.length,paid.length].forEach(val=>{const stat=document.createElement('div'); stat.style.cssText='background:#fff8fa;border:1px solid #ead1d6;border-radius:12px;padding:10px;text-align:center'; const b=document.createElement('b'); b.style.cssText='display:block;font-size:18px;color:#530071'; b.textContent=val; stat.appendChild(b); statsDiv.appendChild(stat)}); const numbersDiv=document.createElement('div'); numbersDiv.style.cssText='display:grid;grid-template-columns:repeat(12,1fr);gap:6px'; r.numbers.forEach(n=>{const btn=document.createElement('div'); const s=r.sales.find(sale=>sale.numbers.includes(n)); btn.style.cssText='border:1px solid #d8b7bf;border-radius:8px;padding:8px 2px;text-align:center;font-weight:800;min-height:56px;background:'+(s?s.status==='paid'?'#82e7a7':'#ffe08a':'#fff')+';font-size:22px;display:flex;align-items:center;justify-content:center'; btn.textContent=n; numbersDiv.appendChild(btn)}); container.appendChild(title); container.appendChild(info); container.appendChild(statsDiv); container.appendChild(numbersDiv); document.body.appendChild(container); const canvas=await html2canvas(container,{scale:2,useCORS:true,backgroundColor:'#ffffff'}); document.body.removeChild(container); const link=document.createElement('a'); link.href=canvas.toDataURL('image/jpeg',0.95); link.download=r.title.replace(/[^a-z0-9]/gi,'_')+'.jpg'; link.click()}catch(e){alert('Erro ao gerar imagem: '+e.message)}}
+function exportJson(){download('rifas-backup.json',JSON.stringify({rifas:state.rifas},null,2))}
+function download(name,text){const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([text],{type:'application/json'})); a.download=name; a.click(); URL.revokeObjectURL(a.href)}
+function importJson(ev){const f=ev.target.files[0]; if(!f)return; const rd=new FileReader(); rd.onload=()=>{try{const data=JSON.parse(rd.result); if(!Array.isArray(data.rifas))throw Error(); state.rifas=data.rifas; state.currentId=state.rifas[0]?.id||null; saveLocal(); render(); alert('JSON importado.')}catch(e){alert('JSON inválido.')}}; rd.readAsText(f)}
+function saveGhConfig(){const cfg={ghOwner:$('ghOwner').value.trim(),ghRepo:$('ghRepo').value.trim(),ghBranch:$('ghBranch').value.trim(),ghPath:$('ghPath').value.trim()}; localStorage.setItem('rifa_gh_cfg',JSON.stringify(cfg)); msg('syncMsg','Configuração salva neste navegador. O token não foi salvo.')}
+function ghHeaders(){const token=$('ghToken').value.trim(); if(!token)throw new Error('Cole o token do GitHub.'); return {'Authorization':'Bearer '+token,'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'}}
+function ghUrl(){const owner=$('ghOwner').value.trim(),repo=$('ghRepo').value.trim(),path=$('ghPath').value.trim(),branch=$('ghBranch').value.trim()||'main'; if(!owner||!repo||!path)throw new Error('Preencha dono, repositório e caminho JSON.'); return `https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${encodeURIComponent(branch)}`}
+async function loadFromGithub(){try{const res=await fetch(ghUrl(),{headers:ghHeaders()}); if(!res.ok)throw new Error('Erro ao carregar: '+res.status); const file=await res.json(); ghSha=file.sha; const json=JSON.parse(decodeURIComponent(escape(atob(file.content.replace(/\n/g,''))))); if(!Array.isArray(json.rifas))throw new Error('JSON não contém rifas.'); state.rifas=json.rifas; state.currentId=state.rifas[0]?.id||null; saveLocal(); render(); msg('syncMsg','JSON carregado do GitHub.')}catch(e){msg('syncMsg',e.message)}}
+async function saveToGithub(){try{const owner=$('ghOwner').value.trim(),repo=$('ghRepo').value.trim(),path=$('ghPath').value.trim(),branch=$('ghBranch').value.trim()||'main'; if(!owner||!repo||!path)throw new Error('Preencha dono, repositório e caminho JSON.'); let sha=ghSha; const get=await fetch(ghUrl(),{headers:ghHeaders()}); if(get.ok){const file=await get.json(); sha=file.sha} const content=btoa(unescape(encodeURIComponent(JSON.stringify({rifas:state.rifas},null,2)))); const put=await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`,{method:'PUT',headers:{...ghHeaders(),'Content-Type':'application/json'},body:JSON.stringify({message:'Atualiza dados da rifa',content,sha,branch})}); if(!put.ok){const err=await put.json().catch(()=>({message:put.status})); throw new Error('Erro ao salvar: '+err.message)} const saved=await put.json(); ghSha=saved.content.sha; msg('syncMsg','JSON salvo no GitHub com sucesso.')}catch(e){msg('syncMsg',e.message)}}
+loadLocal();
+</script>
+</body>
+</html>
