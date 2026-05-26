@@ -40,7 +40,22 @@
         "29",
         "30"
       ],
-      "sales": [],
+      "sales": [
+        {
+          "id": "rmpmqcpl4fkkdc",
+          "buyer": "Tiago pinho",
+          "phone": "",
+          "seller": "Raissa",
+          "numbers": [
+            "30",
+            "29"
+          ],
+          "status": "paid",
+          "date": "2026-05-26",
+          "notes": "",
+          "createdAt": "2026-05-26T14:28:07.432Z"
+        }
+      ],
       "createdAt": "2026-05-26T14:27:55.920Z"
     }
   ]
