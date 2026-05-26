@@ -44,6 +44,7 @@
       <div><label>Caminho JSON</label><input id="ghPath" value="data/rifas.json"></div>
     </div>
     <label>Token GitHub</label><input id="ghToken" type="password" placeholder="Cole o token somente no navegador" autocomplete="off">
+    <label style="display:flex;align-items:center;gap:8px;font-weight:400;font-size:14px;margin:8px 0"><input type="checkbox" id="saveToken"> Salvar token neste navegador (menos seguro)</label>
     <div class="actions">
       <button class="secondary" onclick="saveGhConfig()">Salvar configuração neste navegador</button>
       <button class="secondary" onclick="loadFromGithub()">Carregar JSON do GitHub</button>
@@ -112,7 +113,7 @@ const $=id=>document.getElementById(id);
 function uid(){return 'r'+Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
 function pad(n,d){return String(n).padStart(d,'0')}
 function today(){return new Date().toISOString().slice(0,10)}
-function loadLocal(){try{state=JSON.parse(localStorage.getItem(STORAGE_KEY))||state}catch(e){}; const cfg=JSON.parse(localStorage.getItem('rifa_gh_cfg')||'{}'); ['ghOwner','ghRepo','ghBranch','ghPath'].forEach(id=>{if(cfg[id])$(id).value=cfg[id]}); $('saleDate').value=today(); render()}
+function loadLocal(){try{state=JSON.parse(localStorage.getItem(STORAGE_KEY))||state}catch(e){}; const cfg=JSON.parse(localStorage.getItem('rifa_gh_cfg')||'{}'); ['ghOwner','ghRepo','ghBranch','ghPath'].forEach(id=>{if(cfg[id])$(id).value=cfg[id]}); if(cfg.ghToken)$(('ghToken')).value=cfg.ghToken; if(cfg.saveToken)$('saveToken').checked=true; $('saleDate').value=today(); render()}
 function saveLocal(){localStorage.setItem(STORAGE_KEY,JSON.stringify(state))}
 function current(){return state.rifas.find(r=>r.id===state.currentId)||state.rifas[0]||null}
 function createRaffle(){const title=$('newTitle').value.trim(); if(!title)return alert('Informe o nome da rifa.'); const qty=+$('newQty').value||100,start=+$('newStart').value||1,digits=+$('newDigits').value||3; const nums=Array.from({length:qty},(_,i)=>pad(start+i,digits)); const r={id:uid(),title,qty,start,digits,price:$('newPrice').value.trim(),prizes:$('newPrizes').value.trim(),numbers:nums,sales:[],createdAt:new Date().toISOString()}; state.rifas.push(r); state.currentId=r.id; saveLocal(); ['newTitle','newPrice','newPrizes'].forEach(id=>$(id).value=''); render(); saveToGithub().catch(()=>{})}
@@ -135,7 +136,7 @@ async function exportAsJpg(){const r=current(); if(!r)return; try{const containe
 function exportJson(){download('rifas-backup.json',JSON.stringify({rifas:state.rifas},null,2))}
 function download(name,text){const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([text],{type:'application/json'})); a.download=name; a.click(); URL.revokeObjectURL(a.href)}
 function importJson(ev){const f=ev.target.files[0]; if(!f)return; const rd=new FileReader(); rd.onload=()=>{try{const data=JSON.parse(rd.result); if(!Array.isArray(data.rifas))throw Error(); state.rifas=data.rifas; state.currentId=state.rifas[0]?.id||null; saveLocal(); render(); alert('JSON importado.')}catch(e){alert('JSON inválido.')}}; rd.readAsText(f)}
-function saveGhConfig(){const cfg={ghOwner:$('ghOwner').value.trim(),ghRepo:$('ghRepo').value.trim(),ghBranch:$('ghBranch').value.trim(),ghPath:$('ghPath').value.trim()}; localStorage.setItem('rifa_gh_cfg',JSON.stringify(cfg)); msg('syncMsg','Configuração salva neste navegador. O token não foi salvo.')}
+function saveGhConfig(){const cfg={ghOwner:$('ghOwner').value.trim(),ghRepo:$('ghRepo').value.trim(),ghBranch:$('ghBranch').value.trim(),ghPath:$('ghPath').value.trim()}; if($('saveToken').checked){cfg.ghToken=$('ghToken').value.trim(); cfg.saveToken=true} localStorage.setItem('rifa_gh_cfg',JSON.stringify(cfg)); msg('syncMsg','Configuração salva neste navegador' + ($('saveToken').checked?' (incluindo token).' :'. O token não foi salvo.'))}
 function ghHeaders(){const token=$('ghToken').value.trim(); if(!token)throw new Error('Cole o token do GitHub.'); return {'Authorization':'Bearer '+token,'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'}}
 function ghUrl(){const owner=$('ghOwner').value.trim(),repo=$('ghRepo').value.trim(),path=$('ghPath').value.trim(),branch=$('ghBranch').value.trim()||'main'; if(!owner||!repo||!path)throw new Error('Preencha dono, repositório e caminho JSON.'); return `https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${encodeURIComponent(branch)}`}
 async function loadFromGithub(){try{const res=await fetch(ghUrl(),{headers:ghHeaders()}); if(!res.ok)throw new Error('Erro ao carregar: '+res.status); const file=await res.json(); ghSha=file.sha; const json=JSON.parse(decodeURIComponent(escape(atob(file.content.replace(/\n/g,''))))); if(!Array.isArray(json.rifas))throw new Error('JSON não contém rifas.'); state.rifas=json.rifas; state.currentId=state.rifas[0]?.id||null; saveLocal(); render(); msg('syncMsg','JSON carregado do GitHub.')}catch(e){msg('syncMsg',e.message)}}
